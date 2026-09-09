@@ -125,13 +125,13 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as error:
             self.send_json({"success": False, "error": str(error)}, 500)
 
-    def send_json(self, data, status=200):
-        response = json.dumps(data, ensure_ascii=False).encode("utf-8")
-                self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(response)))
-        self.end_headers()
-        self.wfile.write(response)
+   def send_json(self, data, status=200):
+     response = json.dumps(data, ensure_ascii=False).encode("utf-8")
+     self.send_response(status)
+     self.send_header("Content-Type", "application/json; charset=utf-8")
+     self.send_header("Content-Length", str(len(response)))
+     self.end_headers()
+     self.wfile.write(response)
 
 app = HTTPServer(("0.0.0.0", PORT), Handler)
 
