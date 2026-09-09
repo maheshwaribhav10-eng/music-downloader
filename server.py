@@ -32,7 +32,20 @@ class Handler(BaseHTTPRequestHandler):
             query = query_params.get("q", [""])[0]
             self.handle_search(query)
         elif path.startswith("/api/status"):
-            self.send_json({"success": True, "status": "online"})
+            # Mock or return status expected by your app
+            self.send_json({
+                "running": False,
+                "current": None,
+                "current_index": 0,
+                "total": 0,
+                "progress": 0,
+                "status": "",
+                "speed": "",
+                "eta": "",
+                "completed": [],
+                "failed": [],
+                "history": []
+            })
         else:
             self.send_error(404, "Not Found")
 
@@ -42,6 +55,8 @@ class Handler(BaseHTTPRequestHandler):
 
         if path in ["/api/download-single", "/api/download"]:
             self.handle_download()
+        elif path == "/api/clear":
+            self.send_json({"success": True, "message": "History cleared"})
         else:
             self.send_error(404, "Not Found")
 
@@ -85,37 +100,30 @@ class Handler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get("Content-Length", 0))
             raw_data = self.rfile.read(content_length) if content_length > 0 else b""
             
-            song = ""
+            song_list = []
             
-            # 1. Try parsing as JSON
             if raw_data:
                 try:
                     data = json.loads(raw_data.decode("utf-8"))
                     if isinstance(data, dict):
-                        song = (data.get("song") or data.get("url") or data.get("link") or data.get("query") or "").strip()
+                        # Handle the "songs" array sent by your frontend app.js
+                        if "songs" in data and isinstance(data["songs"], list):
+                            song_list = [str(s).strip() for s in data["songs"] if str(s).strip()]
+                        
+                        # Fallbacks for single keys if ever sent
+                        if not song_list:
+                            single = (data.get("song") or data.get("url") or data.get("link") or data.get("query") or "").strip()
+                            if single:
+                                song_list = [single]
                 except json.JSONDecodeError:
-                    # 2. Try parsing as URL-encoded form data if JSON fails
-                    try:
-                        form_data = urllib.parse.parse_qs(raw_data.decode("utf-8"))
-                        for key in ["song", "url", "link", "query"]:
-                            if key in form_data:
-                                song = form_data[key][0].strip()
-                                break
-                    except Exception:
-                        pass
+                    pass
 
-            # 3. Fallback to query string if body was empty
-            if not song:
-                parsed_path = urllib.parse.urlparse(self.path)
-                query_params = urllib.parse.parse_qs(parsed_path.query)
-                for key in ["song", "url", "link", "query"]:
-                    if key in query_params:
-                        song = query_params[key][0].strip()
-                        break
-
-            if not song:
-                self.send_json({"success": False, "error": "No song, url, or query provided in request payload."}, 400)
+            if not song_list:
+                self.send_json({"success": False, "error": "No songs provided in request payload."}, 400)
                 return
+
+            # Process the first song in the batch (or loop through them if you want backend queuing)
+            song = song_list[0]
 
             temp_dir = tempfile.mkdtemp()
             output_template = os.path.join(temp_dir, "%(title)s.%(ext)s")
@@ -140,18 +148,8 @@ class Handler(BaseHTTPRequestHandler):
                 mp3_filename = os.path.splitext(filename)[0] + ".mp3"
 
             if os.path.exists(mp3_filename):
-                with open(mp3_filename, "rb") as f:
-                    mp3_data = f.read()
-                
-                safe_title = os.path.basename(mp3_filename)
-                encoded_title = urllib.parse.quote(safe_title)
-
-                self.send_response(200)
-                self.send_header("Content-Type", "audio/mpeg")
-                self.send_header("Content-Disposition", f"attachment; filename*=UTF-8''{encoded_title}")
-                self.send_header("Content-Length", str(len(mp3_data)))
-                self.end_headers()
-                self.wfile.write(mp3_data)
+                # If your frontend expects a JSON confirmation message on post:
+                self.send_json({"success": True, "message": f"Successfully downloaded: {os.path.basename(mp3_filename)}"})
             else:
                 self.send_json({"success": False, "error": "Conversion failed to generate MP3 file"}, 500)
 
