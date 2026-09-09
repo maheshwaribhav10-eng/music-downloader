@@ -1,0 +1,271 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Downloader</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">♫</div>
+            <div>
+                <div class="brand-name">Music</div>
+                <div class="brand-sub">Downloader</div>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <div class="nav-label">MENU</div>
+            <button class="nav-item active" data-page="home">
+                <span class="nav-icon">⌂</span>
+                <span>Home</span>
+            </button>
+            <button class="nav-item" data-page="downloads">
+                <span class="nav-icon">↓</span>
+                <span>Downloads</span>
+                <span class="nav-count" id="downloadCount">0</span>
+            </button>
+            <button class="nav-item" data-page="library">
+                <span class="nav-icon">♫</span>
+                <span>Library</span>
+            </button>
+            <button class="nav-item" data-page="playlists">
+                <span class="nav-icon">☷</span>
+                <span>Playlists</span>
+            </button>
+
+            <div class="nav-label settings-label">SYSTEM</div>
+            <button class="nav-item" id="settingsButton">
+                <span class="nav-icon">⚙</span>
+                <span>Settings</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="local-status">
+                <span class="status-dot"></span>
+                <div>
+                    <strong>Running locally</strong>
+                    <small>Your music stays on your PC</small>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+        <header class="topbar">
+            <div>
+                <div class="page-location">HOME</div>
+                <h1 id="pageTitle">Good music starts here.</h1>
+            </div>
+            <div class="top-actions">
+                <button class="icon-button" id="topSettings" title="Settings">⚙</button>
+            </div>
+        </header>
+
+        <!-- HOME PAGE -->
+        <section class="page active-page" id="homePage">
+            <section class="hero">
+                <div class="hero-content">
+                    <div class="hero-tag"><span>●</span> READY TO DOWNLOAD</div>
+                    <h2>Your music.<br><span>Your way.</span></h2>
+                    <p>Search for songs, build your queue, and keep your music collection stored locally.</p>
+                </div>
+            </section>
+
+            <section class="add-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-kicker">ADD MUSIC</span>
+                        <h3>Build your queue</h3>
+                    </div>
+                    <span class="queue-number"><strong id="queueCount">0</strong> songs</span>
+                </div>
+                <div class="search-box">
+                    <div class="search-icon">⌕</div>
+                    <input type="text" id="songInput" placeholder="Song Name - Artist" autocomplete="off">
+                    <button class="add-button" id="addButton"><span>＋</span> Add</button>
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-action" id="importButton">
+                        <div class="quick-icon">↑</div>
+                        <div>
+                            <strong>Import songs.txt</strong>
+                            <span>Add a whole list at once</span>
+                        </div>
+                    </button>
+                    <button class="quick-action" id="clearButton">
+                        <div class="quick-icon">×</div>
+                        <div>
+                            <strong>Clear queue</strong>
+                            <span>Remove all queued songs</span>
+                        </div>
+                    </button>
+                </div>
+                <input type="file" id="fileInput" accept=".txt" hidden>
+            </section>
+
+            <section class="queue-section">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-kicker">UP NEXT</span>
+                        <h3>Download queue</h3>
+                    </div>
+                    <button class="download-all" id="downloadButton"><span>↓</span> Download all</button>
+                </div>
+                <div class="queue-card" id="songList">
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-icon">♫</div>
+                        <h4>Your queue is empty</h4>
+                        <p>Add a song above or import your <strong>songs.txt</strong> file.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="downloads-section" style="margin-top: 40px; border-top: 1px solid #252a31; padding-top: 20px;">
+                <div class="section-heading">
+                    <div>
+                        <span class="section-kicker">LIVE</span>
+                        <h3>Current Download Status</h3>
+                    </div>
+                </div>
+                <div class="downloads-card" style="padding: 20px;">
+                    <div id="liveProgressContainer">
+                        <div style="color: #9299a3; font-size: 13px;">No active downloads.</div>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <!-- DOWNLOADS PAGE -->
+        <section class="page" id="downloadsPage">
+            <div class="simple-page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <span class="section-kicker">ACTIVITY</span>
+                    <h2>Downloads</h2>
+                    <p>Track your recent downloads and retry failures.</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="text-button" id="retryAllButton" style="padding: 8px 12px; background: #333; border-radius: 8px; color: white;">Retry Failed</button>
+                    <button class="text-button" id="clearDownloads" style="padding: 8px 12px; background: transparent; border-radius: 8px; border: 1px solid #333;">Clear History</button>
+                </div>
+            </div>
+            <div class="downloads-card large-card" id="downloadsPageList">
+                <div class="download-empty">
+                    <div class="download-empty-icon">↓</div>
+                    <div>
+                        <strong>No history yet</strong>
+                        <span>Your download activity will appear here.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LIBRARY PAGE -->
+        <section class="page" id="libraryPage">
+            <div class="simple-page-header">
+                <span class="section-kicker">YOUR MUSIC</span>
+                <h2>Library</h2>
+                <p>Your local E:\Music collection.</p>
+            </div>
+            <div class="coming-soon">
+                <div class="coming-icon">♫</div>
+                <h3>Library viewer active shell</h3>
+                <p>Files are successfully stored in E:\Music. Future scanning can be displayed here without databases.</p>
+            </div>
+        </section>
+
+        <!-- PLAYLISTS PAGE -->
+        <section class="page" id="playlistsPage">
+            <div class="simple-page-header">
+                <span class="section-kicker">ORGANIZE</span>
+                <h2>Playlists</h2>
+                <p>Create and manage your local playlists.</p>
+            </div>
+            <div class="coming-soon">
+                <div class="coming-icon">☷</div>
+                <h3>Playlists active shell</h3>
+                <p>Ready for local .m3u parsing.</p>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <span class="section-kicker">SYSTEM</span>
+                <h2>Settings</h2>
+            </div>
+            <button class="modal-close" id="closeSettings">×</button>
+        </div>
+        <div class="setting-group">
+            <div class="setting-title">
+                <strong>Download folder</strong>
+                <span>Where your music will be saved.</span>
+            </div>
+            <div class="setting-value">E:\Music</div>
+        </div>
+        <div class="setting-group">
+            <div class="setting-title">
+                <strong>FFmpeg Location</strong>
+                <span>Required for MP3 conversion.</span>
+            </div>
+            <div class="setting-value">C:\ffmpeg\bin</div>
+        </div>
+        <div class="setting-group">
+            <div class="setting-title">
+                <strong>Audio format</strong>
+                <span>Default format.</span>
+            </div>
+            <div class="setting-value">MP3</div>
+        </div>
+        <div class="setting-group">
+            <div class="setting-title">
+                <strong>Metadata & Artwork</strong>
+                <span>Embed YouTube data into MP3.</span>
+            </div>
+            <div class="setting-value">Enabled</div>
+        </div>
+        <div class="settings-footer">
+            <span>Read-only configuration view.</span>
+            <button class="save-button" id="saveSettings">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- SEARCH MODAL -->
+<div id="searchModal" class="modal-overlay">
+    <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+            <div>
+                <span class="section-kicker">SEARCH</span>
+                <h2 id="modalSongTitle">Select Version</h2>
+            </div>
+            <button class="modal-close" id="closeModalBtn">×</button>
+        </div>
+        <div id="modalResultsList" style="max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+            <p style="text-align: center; color: #888;">Fetching top matches from YouTube...</p>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+    <span class="toast-icon">✓</span>
+    <span id="toastMessage">Done</span>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
