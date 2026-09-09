@@ -11,6 +11,12 @@ import yt_dlp
 PORT = int(os.environ.get("PORT", 8000))
 
 class Handler(BaseHTTPRequestHandler):
+    def send_error(self, code, message=None):
+        if self.path.startswith("/api/"):
+            self.send_json({"success": False, "error": message or "API Error"}, code)
+        else:
+            super().send_error(code, message)
+
     def do_GET(self):
         if self.path == "/" or self.path == "/index.html":
             self.serve_file("index.html", "text/html")
