@@ -26,11 +26,13 @@ class Handler(BaseHTTPRequestHandler):
             self.serve_file("app.js", "application/javascript")
         elif self.path.startswith("/api/search"):
             self.handle_search()
+        elif self.path.startswith("/api/status"):
+            self.send_json({"success": True, "status": "online"})
         else:
             self.send_error(404, "Not Found")
 
     def do_POST(self):
-        if self.path == "/api/download-single":
+        if self.path == "/api/download-single" or self.path == "/api/download":
             self.handle_download()
         else:
             self.send_error(404, "Not Found")
