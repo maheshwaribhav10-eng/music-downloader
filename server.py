@@ -1,4 +1,7 @@
-﻿import os
+﻿import static_ffmpeg
+static_ffmpeg.add_paths()
+
+import os
 import json
 import tempfile
 import urllib.parse
