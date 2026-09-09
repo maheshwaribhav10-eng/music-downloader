@@ -85,8 +85,13 @@ class Handler(BaseHTTPRequestHandler):
         try:
             content_length = int(self.headers.get("Content-Length", 0))
             raw_data = self.rfile.read(content_length)
+            
+            if not raw_data:
+                self.send_json({"success": False, "error": "No data provided"}, 400)
+                return
+
             data = json.loads(raw_data.decode("utf-8"))
-            song = data.get("song", "").strip()
+            song = (data.get("song") or data.get("url") or data.get("link") or data.get("query") or "").strip()
 
             if not song:
                 self.send_json({"success": False, "error": "No song provided"}, 400)
