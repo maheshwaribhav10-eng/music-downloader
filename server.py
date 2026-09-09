@@ -32,7 +32,6 @@ class Handler(BaseHTTPRequestHandler):
             query = query_params.get("q", [""])[0]
             self.handle_search(query)
         elif path.startswith("/api/status"):
-            # Mock or return status expected by your app
             self.send_json({
                 "running": False,
                 "current": None,
@@ -106,11 +105,9 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     data = json.loads(raw_data.decode("utf-8"))
                     if isinstance(data, dict):
-                        # Handle the "songs" array sent by your frontend app.js
                         if "songs" in data and isinstance(data["songs"], list):
                             song_list = [str(s).strip() for s in data["songs"] if str(s).strip()]
                         
-                        # Fallbacks for single keys if ever sent
                         if not song_list:
                             single = (data.get("song") or data.get("url") or data.get("link") or data.get("query") or "").strip()
                             if single:
@@ -122,7 +119,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"success": False, "error": "No songs provided in request payload."}, 400)
                 return
 
-            # Process the first song in the batch (or loop through them if you want backend queuing)
             song = song_list[0]
 
             temp_dir = tempfile.mkdtemp()
@@ -135,6 +131,8 @@ class Handler(BaseHTTPRequestHandler):
                 "outtmpl": output_template,
                 "restrictfilenames": True,
                 "quiet": True,
+                # Add extractor_args to bypass sign-in / bot challenges by using client variants if possible, or spoofing client
+                "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
                 "postprocessors": [{
                     "key": "FFmpegExtractAudio",
                     "preferredcodec": "mp3",
@@ -148,7 +146,6 @@ class Handler(BaseHTTPRequestHandler):
                 mp3_filename = os.path.splitext(filename)[0] + ".mp3"
 
             if os.path.exists(mp3_filename):
-                # If your frontend expects a JSON confirmation message on post:
                 self.send_json({"success": True, "message": f"Successfully downloaded: {os.path.basename(mp3_filename)}"})
             else:
                 self.send_json({"success": False, "error": "Conversion failed to generate MP3 file"}, 500)
