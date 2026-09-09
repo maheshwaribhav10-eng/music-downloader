@@ -18,21 +18,29 @@ class Handler(BaseHTTPRequestHandler):
             super().send_error(code, message)
 
     def do_GET(self):
-        if self.path == "/" or self.path == "/index.html":
+        parsed_path = urllib.parse.urlparse(self.path)
+        path = parsed_path.path
+        query_params = urllib.parse.parse_qs(parsed_path.query)
+
+        if path == "/" or path == "/index.html":
             self.serve_file("index.html", "text/html")
-        elif self.path == "/style.css":
+        elif path == "/style.css":
             self.serve_file("style.css", "text/css")
-        elif self.path == "/app.js":
+        elif path == "/app.js":
             self.serve_file("app.js", "application/javascript")
-        elif self.path.startswith("/api/search"):
-            self.handle_search()
-        elif self.path.startswith("/api/status"):
+        elif path.startswith("/api/search"):
+            query = query_params.get("q", [""])[0]
+            self.handle_search(query)
+        elif path.startswith("/api/status"):
             self.send_json({"success": True, "status": "online"})
         else:
             self.send_error(404, "Not Found")
 
     def do_POST(self):
-        if self.path == "/api/download-single" or self.path == "/api/download":
+        parsed_path = urllib.parse.urlparse(self.path)
+        path = parsed_path.path
+
+        if path in ["/api/download-single", "/api/download"]:
             self.handle_download()
         else:
             self.send_error(404, "Not Found")
@@ -49,16 +57,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_error(404, "File not found")
 
-    def handle_search(self):
-        query = ""
-        if "?" in self.path:
-            _, query_part = self.path.split("?", 1)
-            for param in query_part.split("&"):
-                if "=" in param:
-                    key, val = param.split("=", 1)
-                    if key == "q":
-                        query = urllib.parse.unquote_plus(val)
-
+    def handle_search(self, query):
         if not query:
             self.send_json({"success": False, "error": "No query provided"}, 400)
             return
@@ -84,17 +83,38 @@ class Handler(BaseHTTPRequestHandler):
     def handle_download(self):
         try:
             content_length = int(self.headers.get("Content-Length", 0))
-            raw_data = self.rfile.read(content_length)
+            raw_data = self.rfile.read(content_length) if content_length > 0 else b""
             
-            if not raw_data:
-                self.send_json({"success": False, "error": "No data provided"}, 400)
-                return
+            song = ""
+            
+            # 1. Try parsing as JSON
+            if raw_data:
+                try:
+                    data = json.loads(raw_data.decode("utf-8"))
+                    if isinstance(data, dict):
+                        song = (data.get("song") or data.get("url") or data.get("link") or data.get("query") or "").strip()
+                except json.JSONDecodeError:
+                    # 2. Try parsing as URL-encoded form data if JSON fails
+                    try:
+                        form_data = urllib.parse.parse_qs(raw_data.decode("utf-8"))
+                        for key in ["song", "url", "link", "query"]:
+                            if key in form_data:
+                                song = form_data[key][0].strip()
+                                break
+                    except Exception:
+                        pass
 
-            data = json.loads(raw_data.decode("utf-8"))
-            song = (data.get("song") or data.get("url") or data.get("link") or data.get("query") or "").strip()
+            # 3. Fallback to query string if body was empty
+            if not song:
+                parsed_path = urllib.parse.urlparse(self.path)
+                query_params = urllib.parse.parse_qs(parsed_path.query)
+                for key in ["song", "url", "link", "query"]:
+                    if key in query_params:
+                        song = query_params[key][0].strip()
+                        break
 
             if not song:
-                self.send_json({"success": False, "error": "No song provided"}, 400)
+                self.send_json({"success": False, "error": "No song, url, or query provided in request payload."}, 400)
                 return
 
             temp_dir = tempfile.mkdtemp()
@@ -133,7 +153,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(mp3_data)
             else:
-                self.send_json({"success": False, "error": "Conversion failed"}, 500)
+                self.send_json({"success": False, "error": "Conversion failed to generate MP3 file"}, 500)
 
         except Exception as error:
             self.send_json({"success": False, "error": str(error)}, 500)
